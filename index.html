@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Solar BNST</title>
+<style>
+:root{
+  --baby:#FFD6E7; --cream:#FFF9F5; --white:#FFFFFF; --red:#C8102E; --red-d:#8E0B21; --red-hover:#A50D26;
+  --green:#1F6B43; --green-d:#134A2E; --green-l:#E4F1E8; --gold:#FFD86B; --ink:#1F2A22; --muted:#5C6B60; --line:#E7D9C2;
+  --ok:#1F7A46; --warn:#7A5200; --err:#B3261E;
+  --font-display:Georgia,"Noto Serif","Droid Serif","Times New Roman",serif;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:var(--font-body);color:var(--ink);display:flex;flex-direction:column;
+  background:radial-gradient(circle,rgba(31,107,67,.12) 1.5px,transparent 2px) 0 0/22px 22px,var(--cream)}
+
+/* Snow layer (behind content) */
+.snow{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.75;
+  background-image:radial-gradient(circle,#fff 2px,transparent 2.5px),radial-gradient(circle,#fff 1.5px,transparent 2px);
+  background-size:97px 131px,61px 89px;background-position:0 0,30px 40px;animation:snowfall 16s linear infinite}
+@keyframes snowfall{from{background-position:0 0,30px 40px}to{background-position:0 900px,30px 940px}}
+
+/* Header: argyle with a scalloped red edge */
+.top{position:sticky;top:0;z-index:5;padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top,0px));
+  display:flex;align-items:center;justify-content:space-between;color:#fff;
+  background:repeating-linear-gradient(45deg,transparent 0 22px,rgba(255,255,255,.16) 22px 23px),
+    repeating-linear-gradient(-45deg,transparent 0 22px,rgba(255,255,255,.16) 22px 23px),
+    repeating-linear-gradient(45deg,var(--green) 0 44px,#2c7d52 44px 88px)}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:-12px;height:12px;pointer-events:none;
+  background:radial-gradient(circle at 50% 0,var(--red) 11px,transparent 12px) 0 0/24px 12px repeat-x}
+.brand{display:flex;align-items:center;font-family:var(--font-display);font-size:1.35rem;font-weight:700;letter-spacing:.2px}
+.brand .wordmark{color:#fff;font-style:normal}
+.brand em{color:var(--gold);font-style:italic}
+.logo{width:46px;height:46px;margin-right:10px;flex:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.25))}
+#whoami{color:#E4F1E8;font-size:.82rem}
+
+/* Lights, tree band, and candy stripe under the header */
+.lights{height:16px;margin-top:-2px;position:relative;z-index:6;
+  background:radial-gradient(circle,var(--gold) 3px,transparent 3.5px) 0 4px/30px 16px repeat-x,linear-gradient(var(--green),var(--green)) 0 8px/100% 2px no-repeat;
+  animation:twinkle 2.4s ease-in-out infinite alternate}
+@keyframes twinkle{from{opacity:.55}to{opacity:1}}
+.trees{height:50px;margin-top:6px;position:relative;z-index:2;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='46'%3E%3Cpath d='M23 6 L34 26 L12 26 Z M23 18 L38 40 L8 40 Z M21 40 h4 v5 h-4 Z' fill='none' stroke='%231F6B43' stroke-width='2'/%3E%3C/svg%3E") 0 0/46px 46px repeat-x}
+.candy{height:8px;position:relative;z-index:2;background:repeating-linear-gradient(-45deg,var(--red) 0 8px,#fff 8px 16px)}
+
+#app{position:relative;z-index:2;flex:1;overflow-y:auto;padding:18px 16px calc(104px + env(safe-area-inset-bottom,0px));max-width:680px;width:100%;margin:0 auto}
+
+/* Cards with a 3D green edge */
+.card{position:relative;background:var(--white);border:2px solid var(--green);border-radius:20px;padding:18px;margin-bottom:18px;box-shadow:0 5px 0 var(--green-d)}
+h2{font-family:var(--font-display);color:var(--red);margin:0 0 10px;font-size:1.2rem;font-weight:700}
+h3{font-family:var(--font-display);font-style:italic;font-size:1rem;color:var(--green);margin:22px 6px 10px;font-weight:700}
+label{display:block;font-weight:700;font-size:.86rem;margin:4px 0;color:var(--green-d)}
+input,select,textarea{width:100%;padding:12px 14px;border:2px solid #CFE3D5;border-radius:14px;font-size:16px;font-family:inherit;background:#fff;color:var(--ink);min-height:46px;outline:none;margin-top:4px}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,216,107,.45)}
+textarea{min-height:88px;resize:vertical}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:500;color:var(--ink)}
+.check input{width:auto;min-height:0;margin-top:3px;accent-color:var(--red)}
+.stack{display:flex;flex-direction:column;gap:12px}
+.two{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+.wrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.row-form{display:flex;gap:8px;align-items:center;margin-top:8px}
+.row-form select,.row-form input{margin-top:0}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;border-radius:999px;border:none;background:var(--red);color:#fff;font-family:var(--font-body);font-weight:700;font-size:.95rem;cursor:pointer;min-height:46px;box-shadow:0 4px 0 var(--red-d);transition:transform .08s,background .15s}
+.btn:hover{background:var(--red-hover)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red-d)}
+.btn.block{width:100%}
+.btn.ghost{background:#fff;color:var(--green-d);border:2px solid var(--green);box-shadow:none}
+.btn.ghost:hover{background:var(--green-l)}
+.btn.sm{padding:7px 14px;font-size:.82rem;min-height:34px}
+
+.pill{display:inline-block;padding:4px 11px;border-radius:999px;font-size:.72rem;font-weight:700;background:var(--green-l);color:var(--green-d);border:1px solid #BFD9C8;white-space:nowrap}
+.pill.ok{background:#DDEFE3;color:var(--ok);border-color:#A9D9BA}
+.pill.warn{background:#FFF0C7;color:var(--warn);border-color:#F2D27A}
+.pill.err{background:#FBE0DE;color:var(--err);border-color:#F2B8B3}
+.tx{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;color:var(--red);word-break:break-all}
+.tx.big{font-size:1.15rem}
+.muted{color:var(--muted);font-size:.84rem}
+.err{color:var(--err)}
+.notice{padding:12px 14px;border-radius:14px;background:#FFF0C7;border:2px dashed var(--gold);color:#5A4300;font-size:.86rem;margin-bottom:14px}
+.empty{text-align:center;color:var(--muted);padding:24px 12px}
+.line{display:flex;justify-content:space-between;padding:10px 0;border-bottom:2px dashed var(--line);font-size:.92rem}
+.line:last-child{border-bottom:none}
+.item{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:2px dashed var(--line);flex-wrap:wrap}
+.item:first-child{border-top:none}
+.notif{display:flex;gap:12px;padding:10px 0;border-top:2px dashed var(--line)}
+.notif:first-child{border-top:none}
+.notif .dot{width:10px;height:10px;border-radius:50%;background:var(--red);margin-top:7px;flex:none}
+.notif.read{opacity:.55}
+.notif.read .dot{background:transparent}
+ol.tl{list-style:none;padding:0;margin:10px 0 0}
+ol.tl li{position:relative;padding:4px 0 12px 22px;border-left:3px solid #CFE3D5;margin-left:6px;font-size:.9rem}
+ol.tl li::before{content:"";position:absolute;left:-7px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--red);border:2px solid #fff}
+ol.tl li small{display:block;color:var(--muted)}
+
+/* Hero: red night scene with a tree, Pip, and gifts */
+.hero{position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:center;gap:12px;color:#fff;border-radius:22px;padding:22px 20px 26px;margin-bottom:18px;
+  background:radial-gradient(circle at 80% 15%,rgba(255,216,107,.3),transparent 35%),linear-gradient(160deg,#B31A2C 0%,#8E0B21 70%,#6A0818 100%);border:2px solid var(--gold);box-shadow:0 5px 0 var(--red-d)}
+.hero::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-22px;height:60px;border-radius:50%;background:#fff;opacity:.95}
+.hero::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,rgba(255,255,255,.9) 1.5px,transparent 2px) 0 0/34px 34px;opacity:.18}
+.hero > *{position:relative;z-index:1}
+.hero h1{font-family:var(--font-display);font-size:1.5rem;font-weight:700;margin:4px 0 6px;color:#fff}
+.hero p{margin:0;font-size:.86rem;color:#FCE8E8}
+.hero-k{font-family:var(--font-display);font-style:italic;font-size:.95rem;color:var(--gold)}
+.hero-ico{width:72px;height:72px;flex:none}
+.hero-ico.small{width:88px;height:88px;display:block;margin:6px auto 10px;overflow:visible}
+.scene{position:relative;width:160px;height:150px;flex:none}
+.scene svg{position:absolute}
+.scene .s-main{left:6px;bottom:0;width:106px;height:126px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.3));animation:sway 4s ease-in-out infinite}
+.scene .s-pip{right:0;bottom:2px;width:70px;height:80px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
+.scene .s-g1{right:52px;bottom:0;width:44px;height:44px}
+.scene .s-g2{left:0;bottom:0;width:38px;height:38px}
+@keyframes sway{0%,100%{transform:rotate(-1deg)}50%{transform:rotate(1.2deg)}}
+
+/* Stat tiles */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{position:relative;background:var(--white);border:2px solid var(--green);border-radius:16px;padding:14px;box-shadow:0 3px 0 var(--green-d);min-width:0}
+.tile .k{font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--green-d);letter-spacing:.6px;display:flex;align-items:center}
+.tile .v{font-family:var(--font-display);font-size:1.4rem;font-weight:700;color:var(--red);margin-top:6px;line-height:1.25;word-break:break-word}
+.tile .s{font-size:.74rem;color:var(--muted);margin-top:6px}
+.ti{width:24px;height:24px;margin-right:6px;flex:none}
+
+/* Chart */
+.ctl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.ctl select{width:auto;min-width:150px;margin:0;min-height:40px;padding:8px 12px}
+.chart{display:flex;align-items:flex-end;gap:3px;height:160px;border-bottom:2px solid var(--green);padding-top:6px}
+.col{flex:1;height:100%;display:flex;align-items:flex-end}
+.bar2{width:100%;background:linear-gradient(180deg,var(--gold),var(--red));border-radius:4px 4px 0 0}
+.axis{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:6px}
+.empty-ico{display:block;width:84px;height:84px;margin:0 auto 6px}
+
+/* Bottom bar with gold active tab and a red plus button */
+nav.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--green);display:flex;justify-content:space-around;align-items:flex-end;padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px));z-index:10;box-shadow:0 -4px 0 var(--green-d)}
+nav.bottom button{flex:1;min-width:0;background:none;border:2px solid transparent;border-radius:16px;color:#CDE6D5;font-family:var(--font-body);font-size:.66rem;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:54px;padding:4px 0;white-space:nowrap;margin:0 2px}
+nav.bottom button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+nav.bottom button.active{background:var(--gold);color:var(--ink);border-color:var(--red)}
+nav.bottom button.plus{position:relative;gap:3px}
+nav.bottom button.plus::before{content:"";width:22px;height:22px;flex:none}
+nav.bottom button.plus .fab{position:absolute;top:-30px;left:50%;margin-left:-27px;background:var(--red);color:#fff;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 var(--red-d);border:4px solid var(--gold)}
+nav.bottom button.plus .fab svg{width:24px;height:24px;stroke-width:2.6}
+nav.bottom button.plus.active{background:none}
+nav.bottom button.plus.active .fab{background:var(--red)}
+
+.toast{position:fixed;left:50%;bottom:112px;transform:translateX(-50%) translateY(20px);background:var(--green-d);color:#fff;padding:10px 18px;border-radius:999px;font-size:.88rem;font-weight:700;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:90%;z-index:20}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--red)}
+
+@media (prefers-reduced-motion:reduce){.snow,.lights,.scene .s-main{animation:none}}
+details.login-toggle summary{list-style:none;cursor:pointer;margin-top:18px}
+details.login-toggle summary::-webkit-details-marker{display:none}
+details.login-toggle[open] summary{opacity:.75}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:800;letter-spacing:.6px;white-space:nowrap;vertical-align:middle}
+.badge i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.hier{list-style:none;padding:0;margin:0}
+.hier li{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1.5px dashed var(--line)}
+.hier li:last-child{border-bottom:none}
+#whoami .badge{background:#fff!important;border-color:#fff!important;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<linearGradient id="sPink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB3C9"/><stop offset="1" stop-color="#E6395B"/></linearGradient>
+<linearGradient id="sHat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF5C7C"/><stop offset="1" stop-color="#B3173A"/></linearGradient>
+<linearGradient id="sBow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC2D6"/><stop offset="1" stop-color="#FF8FAB"/></linearGradient>
+<linearGradient id="sCherry" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF6B88"/><stop offset="1" stop-color="#B3173A"/></linearGradient>
+<linearGradient id="sGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF4B8"/><stop offset="1" stop-color="#E0A21F"/></linearGradient>
+<radialGradient id="sShadow"><stop offset="0" stop-color="#49323B" stop-opacity=".3"/><stop offset="1" stop-color="#49323B" stop-opacity="0"/></radialGradient>
+<symbol id="solara" viewBox="0 0 160 170">
+  <ellipse cx="80" cy="160" rx="54" ry="7" fill="url(#sShadow)"/>
+  <circle cx="80" cy="102" r="52" fill="url(#sPink)"/>
+  <ellipse cx="62" cy="80" rx="14" ry="8" fill="#fff" opacity=".35" transform="rotate(-20 62 80)"/>
+  <path d="M34 76Q44 22 96 16Q122 30 108 62Q84 84 34 76Z" fill="url(#sHat)"/>
+  <rect x="28" y="66" width="104" height="20" rx="10" fill="#fff"/>
+  <circle cx="110" cy="20" r="11" fill="#fff"/>
+  <ellipse cx="64" cy="106" rx="6.5" ry="9" fill="#49323B"/>
+  <ellipse cx="98" cy="106" rx="6.5" ry="9" fill="#49323B"/>
+  <circle cx="66" cy="102" r="2.5" fill="#fff"/><circle cx="100" cy="102" r="2.5" fill="#fff"/>
+  <path d="M71 122Q81 132 91 122" fill="none" stroke="#49323B" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="48" cy="120" r="7" fill="#FFD0DE" opacity=".9"/><circle cx="114" cy="120" r="7" fill="#FFD0DE" opacity=".9"/>
+  <path d="M124 92C136 78 150 84 146 96C143 104 132 102 124 92Z" fill="url(#sBow)" stroke="#E6395B" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M124 92C112 78 98 84 102 96C105 104 116 102 124 92Z" fill="url(#sBow)" stroke="#E6395B" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="124" cy="92" r="5" fill="#E6395B"/>
+</symbol>
+<symbol id="bow" viewBox="0 0 100 70">
+  <path d="M50 35C34 6 6 8 12 26C16 40 38 40 50 35Z" fill="url(#sBow)" stroke="#E6395B" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M50 35C66 6 94 8 88 26C84 40 62 40 50 35Z" fill="url(#sBow)" stroke="#E6395B" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="44" y="28" width="12" height="16" rx="4" fill="#E6395B"/>
+  <path d="M42 44L30 66M58 44L70 66" stroke="#E6395B" stroke-width="5" stroke-linecap="round"/>
+</symbol>
+<symbol id="cherry" viewBox="0 0 80 100">
+  <path d="M40 4C40 20 44 30 54 34" fill="none" stroke="#7A4A2A" stroke-width="3" stroke-linecap="round"/>
+  <path d="M42 14C52 2 68 6 70 14C60 20 50 20 42 14Z" fill="#3A9D68"/>
+  <circle cx="26" cy="68" r="20" fill="url(#sCherry)"/>
+  <circle cx="54" cy="64" r="18" fill="url(#sCherry)"/>
+  <ellipse cx="20" cy="60" rx="5" ry="3" fill="#fff" opacity=".45" transform="rotate(-25 20 60)"/>
+  <ellipse cx="48" cy="56" rx="4.5" ry="2.5" fill="#fff" opacity=".45" transform="rotate(-25 48 56)"/>
+</symbol>
+<symbol id="sparkle" viewBox="0 0 40 40">
+  <path d="M20 0C21 14 26 19 40 20C26 21 21 26 20 40C19 26 14 21 0 20C14 19 19 14 20 0Z" fill="url(#sGold)"/>
+</symbol>
+<symbol id="heart" viewBox="0 0 60 56">
+  <path d="M30 52C12 40 2 30 2 17C2 8 9 2 17 2C23 2 28 5 30 10C32 5 37 2 43 2C51 2 58 8 58 17C58 30 48 40 30 52Z" fill="url(#sPink)"/>
+  <ellipse cx="18" cy="14" rx="5" ry="3" fill="#fff" opacity=".5" transform="rotate(-30 18 14)"/>
+</symbol>
+
+<linearGradient id="sWhite" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#EFE7DA"/></linearGradient>
+<symbol id="mochi" viewBox="0 0 160 170">
+  <ellipse cx="80" cy="162" rx="50" ry="6" fill="url(#sShadow)"/>
+  <circle cx="80" cy="106" r="50" fill="url(#sWhite)" stroke="#E4D9C8" stroke-width="2"/>
+  <path d="M40 76Q52 34 82 30Q108 40 104 74Q72 86 40 76Z" fill="url(#sHat)"/>
+  <rect x="36" y="68" width="88" height="14" rx="7" fill="#fff" stroke="#E4D9C8" stroke-width="1.5"/>
+  <circle cx="110" cy="30" r="9" fill="#fff"/>
+  <path d="M58 106Q65 115 72 106" fill="none" stroke="#49323B" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M88 106Q95 115 102 106" fill="none" stroke="#49323B" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="50" cy="122" r="8" fill="#FFB3C9" opacity=".85"/><circle cx="110" cy="122" r="8" fill="#FFB3C9" opacity=".85"/>
+  <path d="M76 124Q80 129 84 124" fill="none" stroke="#49323B" stroke-width="2.5" stroke-linecap="round"/>
+</symbol>
+<symbol id="cherry-buddy" viewBox="0 0 120 130">
+  <path d="M60 14C60 30 64 40 76 46" fill="none" stroke="#7A4A2A" stroke-width="3" stroke-linecap="round"/>
+  <path d="M62 22C72 8 90 10 92 20C82 28 70 28 62 22Z" fill="#3A9D68"/>
+  <circle cx="42" cy="80" r="30" fill="url(#sCherry)"/>
+  <circle cx="84" cy="76" r="26" fill="url(#sCherry)"/>
+  <ellipse cx="30" cy="70" rx="7" ry="4" fill="#fff" opacity=".4" transform="rotate(-25 30 70)"/>
+  <circle cx="36" cy="80" r="3.5" fill="#49323B"/><circle cx="50" cy="80" r="3.5" fill="#49323B"/>
+  <path d="M38 90Q43 95 48 90" fill="none" stroke="#49323B" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="26" cy="90" r="4" fill="#FFB3C9" opacity=".85"/><circle cx="58" cy="90" r="4" fill="#FFB3C9" opacity=".85"/>
+  <path d="M30 104Q61 112 92 104L92 116Q61 124 30 116Z" fill="#fff" stroke="#E4D9C8" stroke-width="1.5"/>
+  <circle cx="44" cy="112" r="2.5" fill="#E6395B"/><circle cx="61" cy="116" r="2.5" fill="#E6395B"/><circle cx="78" cy="112" r="2.5" fill="#E6395B"/>
+</symbol>
+<symbol id="logo" viewBox="0 0 120 120">
+  <circle cx="60" cy="60" r="57" fill="#FFF6E7"/>
+  <circle cx="60" cy="60" r="52" fill="url(#sGold)"/>
+  <circle cx="60" cy="60" r="45" fill="url(#sCherry)"/>
+  <circle cx="60" cy="60" r="38" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="2 5" stroke-linecap="round" opacity=".7"/>
+  <path d="M60 30L67.5 47.5L86 49.5L72 61.8L76.2 80L60 70.4L43.8 80L48 61.8L34 49.5L52.5 47.5Z" fill="url(#sGold)" stroke="#8A5A00" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M60 72C52 62 40 66 44 74C46 79 55 77 60 72Z" fill="#FFF6E7" opacity=".95"/>
+  <path d="M60 72C68 62 80 66 76 74C74 79 65 77 60 72Z" fill="#FFF6E7" opacity=".95"/>
+  <circle cx="60" cy="72" r="3.4" fill="#8E0B21"/>
+  <circle cx="18" cy="18" r="3" fill="#FFF6E7"/><circle cx="102" cy="22" r="2.4" fill="#FFF6E7"/><circle cx="98" cy="100" r="2.8" fill="#FFF6E7"/>
+</symbol>
+
+<linearGradient id="gRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EE4A62"/><stop offset="1" stop-color="#A80E2A"/></linearGradient>
+<linearGradient id="gGreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A9D68"/><stop offset="1" stop-color="#14502F"/></linearGradient>
+<linearGradient id="gGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF4B8"/><stop offset="1" stop-color="#E0A21F"/></linearGradient>
+<linearGradient id="gWhite" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E9E3DA"/></linearGradient>
+<radialGradient id="gShadow"><stop offset="0" stop-color="#2B1B17" stop-opacity=".35"/><stop offset="1" stop-color="#2B1B17" stop-opacity="0"/></radialGradient>
+<symbol id="tree" viewBox="0 0 120 150">
+  <ellipse cx="60" cy="144" rx="34" ry="5" fill="url(#gShadow)"/>
+  <rect x="51" y="118" width="18" height="24" rx="4" fill="#7A4A2A"/>
+  <path d="M60 14L86 56H34Z" fill="url(#gGreen)" stroke="#14502F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M60 44L96 94H24Z" fill="url(#gGreen)" stroke="#14502F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M60 74L108 124H12Z" fill="url(#gGreen)" stroke="#14502F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M26 88Q34 96 42 88T58 88T74 88T90 88T100 88" fill="none" stroke="#FFE27A" stroke-width="3" stroke-dasharray="2 5" stroke-linecap="round"/>
+  <path d="M30 118Q40 126 50 118T70 118T90 118" fill="none" stroke="#FFE27A" stroke-width="3" stroke-dasharray="2 5" stroke-linecap="round"/>
+  <circle cx="46" cy="66" r="5" fill="#EE4A62"/><circle cx="46" cy="64" r="1.5" fill="#fff" opacity=".7"/>
+  <circle cx="76" cy="72" r="5" fill="url(#gGold)"/>
+  <circle cx="58" cy="104" r="5" fill="#EE4A62"/>
+  <circle cx="34" cy="108" r="4" fill="url(#gGold)"/><circle cx="88" cy="110" r="4" fill="#EE4A62"/>
+  <path d="M60 0l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="url(#gGold)" stroke="#B87A10" stroke-width="1.5" stroke-linejoin="round"/>
+</symbol><symbol id="gift-red" viewBox="0 0 120 120">
+  <ellipse cx="60" cy="110" rx="46" ry="7" fill="url(#gShadow)"/>
+  <rect x="20" y="50" width="80" height="58" rx="7" fill="url(#gRed)"/>
+  <rect x="14" y="36" width="92" height="22" rx="7" fill="#F55A71"/>
+  <rect x="18" y="38" width="84" height="5" rx="2.5" fill="#fff" opacity=".28"/>
+  <rect x="52" y="36" width="16" height="72" fill="url(#gGold)"/>
+  <path d="M60 36C44 10 22 14 28 28C32 38 50 38 60 36Z" fill="url(#gGold)"/>
+  <path d="M60 36C76 10 98 14 92 28C88 38 70 38 60 36Z" fill="url(#gGold)"/>
+  <circle cx="60" cy="35" r="7.5" fill="#FFE27A" stroke="#B87A10" stroke-width="2"/>
+  <rect x="26" y="58" width="7" height="42" rx="3.5" fill="#fff" opacity=".2"/>
+</symbol><symbol id="gift-gold" viewBox="0 0 120 120">
+  <ellipse cx="60" cy="110" rx="36" ry="6" fill="url(#gShadow)"/>
+  <rect x="26" y="66" width="68" height="42" rx="6" fill="url(#gGold)"/>
+  <rect x="22" y="58" width="76" height="14" rx="5" fill="#FFE27A"/>
+  <rect x="54" y="58" width="12" height="50" fill="url(#gRed)"/>
+  <circle cx="60" cy="54" r="10" fill="url(#gRed)"/>
+  <path d="M60 52C52 36 40 40 44 48Z" fill="url(#gRed)"/>
+  <path d="M60 52C68 36 80 40 76 48Z" fill="url(#gRed)"/>
+</symbol><symbol id="wreath" viewBox="0 0 120 120">
+  <circle cx="60" cy="60" r="40" fill="none" stroke="url(#gGreen)" stroke-width="16"/>
+  <circle cx="60" cy="60" r="40" fill="none" stroke="#FFE27A" stroke-width="2" stroke-dasharray="1 9" stroke-linecap="round"/>
+  <path d="M60 96L50 116M60 96L70 116" stroke="#A80E2A" stroke-width="5" stroke-linecap="round"/>
+  <path d="M60 92C44 100 36 108 40 116C50 112 58 104 60 96Z" fill="url(#gRed)"/>
+  <path d="M60 92C76 100 84 108 80 116C70 112 62 104 60 96Z" fill="url(#gRed)"/>
+</symbol><symbol id="bell" viewBox="0 0 120 120">
+  <path d="M60 18c-18 0-28 14-28 32v26l-10 12h76l-10-12V50c0-18-10-32-28-32z" fill="url(#gGold)" stroke="#B87A10" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M46 40Q50 30 60 30" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".6"/>
+  <circle cx="60" cy="96" r="7" fill="url(#gRed)"/>
+  <rect x="56" y="8" width="8" height="10" rx="3" fill="#B87A10"/>
+</symbol><symbol id="pip" viewBox="0 0 140 160">
+  <ellipse cx="70" cy="152" rx="46" ry="6" fill="url(#gShadow)"/>
+  <ellipse cx="26" cy="98" rx="10" ry="16" fill="#FFD9B8" transform="rotate(-18 26 98)"/>
+  <ellipse cx="114" cy="98" rx="10" ry="16" fill="#FFD9B8" transform="rotate(18 114 98)"/>
+  <circle cx="70" cy="100" r="38" fill="#FFD9B8"/>
+  <path d="M30 76Q34 34 96 36Q116 46 112 72Q72 66 30 76Z" fill="url(#gGreen)"/>
+  <rect x="26" y="70" width="90" height="14" rx="7" fill="url(#gRed)"/>
+  <circle cx="120" cy="30" r="10" fill="url(#gGold)" stroke="#B87A10" stroke-width="1.5"/>
+  <path d="M104 46Q120 40 118 26" fill="none" stroke="#14502F" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="58" cy="102" r="5" fill="#2B1B17"/><circle cx="82" cy="102" r="5" fill="#2B1B17"/>
+  <circle cx="59" cy="100" r="1.6" fill="#fff"/><circle cx="83" cy="100" r="1.6" fill="#fff"/>
+  <circle cx="50" cy="116" r="6" fill="#FF8FAB" opacity=".8"/><circle cx="90" cy="116" r="6" fill="#FF8FAB" opacity=".8"/>
+  <path d="M60 116Q70 126 80 116" fill="none" stroke="#2B1B17" stroke-width="3" stroke-linecap="round"/>
+  <path d="M40 136Q70 146 100 136L104 150Q70 158 36 150Z" fill="url(#gRed)"/>
+  <path d="M44 146Q70 154 96 146" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="4 6" stroke-linecap="round"/>
+</symbol><symbol id="snowy" viewBox="0 0 130 160">
+  <ellipse cx="65" cy="152" rx="44" ry="6" fill="url(#gShadow)"/>
+  <circle cx="65" cy="106" r="42" fill="url(#gWhite)" stroke="#D9D0C2" stroke-width="2"/>
+  <circle cx="65" cy="50" r="30" fill="url(#gWhite)" stroke="#D9D0C2" stroke-width="2"/>
+  <rect x="44" y="18" width="42" height="8" rx="2" fill="#2B1B17"/>
+  <rect x="50" y="2" width="30" height="20" rx="3" fill="#2B1B17"/>
+  <rect x="50" y="14" width="30" height="5" fill="url(#gRed)"/>
+  <circle cx="54" cy="50" r="4" fill="#2B1B17"/><circle cx="76" cy="50" r="4" fill="#2B1B17"/>
+  <path d="M65 56L80 60L65 63Z" fill="#F28C28"/>
+  <circle cx="54" cy="72" r="3" fill="#2B1B17"/><circle cx="65" cy="76" r="3" fill="#2B1B17"/><circle cx="76" cy="72" r="3" fill="#2B1B17"/>
+  <path d="M30 84Q65 98 100 84L102 96Q65 110 28 96Z" fill="url(#gRed)"/>
+  <path d="M96 94L110 116M34 94L18 112" stroke="#7A4A2A" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="65" cy="122" r="4" fill="#2B1B17"/><circle cx="65" cy="138" r="4" fill="#2B1B17"/>
+</symbol></defs></svg>
+<header class="top"><div class="brand"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><use href="#logo"/></svg><span class="wordmark">Solar <em>BNST</em></span></div><div id="whoami" class="muted"></div></header>
+<div class="lights" aria-hidden="true"></div>
+<div class="trees" aria-hidden="true"></div>
+<div class="candy" aria-hidden="true"></div>
+<div class="snow" aria-hidden="true"></div>
+<main id="app"></main>
+<nav class="bottom" aria-label="Main navigation">
+  <button data-v="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+  <button data-v="board"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg>Leaderboard</button>
+  <button data-v="find" class="plus"><span class="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Find MM</button>
+  <button data-v="mms"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/></svg>MMs</button>
+  <button data-v="account"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Account</button>
+</nav>
+<div id="toast" class="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = (c,cur) => Number(c).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + " " + cur;
+const ST = {PENDING:"Pending Assignment",AWAIT:"Awaiting MM/MW Acceptance",ASSIGNED:"Assigned",GC:"Messenger GC Setup",PROG:"In Progress",CONF:"Awaiting Confirmation",DONE:"Completed",DISP:"Disputed",CANCEL:"Cancelled"};
+const T = {
+  [ST.PENDING]:[ST.AWAIT,ST.CANCEL], [ST.AWAIT]:[ST.ASSIGNED,ST.PENDING,ST.CANCEL],
+  [ST.ASSIGNED]:[ST.GC,ST.DISP,ST.CANCEL], [ST.GC]:[ST.PROG,ST.DISP,ST.CANCEL], [ST.PROG]:[ST.CONF,ST.DISP,ST.CANCEL],
+  [ST.CONF]:[ST.DONE,ST.PROG,ST.DISP], [ST.DISP]:[ST.PROG,ST.CANCEL], [ST.DONE]:[], [ST.CANCEL]:[]
+};
+const MM_OK = [ST.GC, ST.PROG, ST.CONF];
+const BLOCKED = [ST.ASSIGNED, ST.AWAIT];
+const pill = s => `<span class="pill ${({[ST.DONE]:"ok",[ST.DISP]:"err",[ST.CANCEL]:"err",[ST.PENDING]:"warn",[ST.AWAIT]:"warn"})[s]||""}">${esc(s)}</span>`;
+
+let me = null, setupRequired = false, view = "home";
+const RANK = {visitor:-1,staff:0,trial_mod:1,trial_admin:2,moderator:3,admin:4,head_mod:5,head_admin:6,co_owner:7,owner:8};
+const ovState = {metric:"completions", cur:"PHP"};
+
+async function api(method, path, body) {
+  if (location.protocol === "file:") throw new Error("Open this app through the server: run node server.mjs, then go to http://localhost:8787");
+  let r;
+  try {
+    r = await fetch(path, {method, credentials:"same-origin",
+      headers: body ? {"Content-Type":"application/json"} : {},
+      body: body ? JSON.stringify(body) : undefined});
+  } catch {
+    throw new Error("Cannot reach the server. Make sure node server.mjs is running and open http://localhost:8787");
+  }
+  let data = {}; try { data = await r.json(); } catch {}
+  if (!r.ok) throw new Error(data.error || "Something went wrong.");
+  return data;
+}
+function toast(msg, ok) {
+  const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (ok ? " ok" : "");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = "toast", 3000);
+}
+async function render() {
+  document.querySelectorAll("nav.bottom button").forEach(b => b.classList.toggle("active", b.dataset.v === view));
+  $("#whoami").innerHTML = me ? `${esc(me.name)} ${badge(me)}` : "";
+  const gate = needsGate();
+  document.querySelector("nav.bottom").style.display = gate ? "none" : "";
+  const app = $("#app"); app.innerHTML = `<p class="muted">Loading...</p>`;
+  try { app.innerHTML = gate ? await gateView() : await VIEWS[view](); }
+  catch (e) { app.innerHTML = `<div class="card"><p class="err">${esc(e.message)}</p></div>`; }
+  if (gate && !me && !setupRequired) initGoogle();
+  window.scrollTo(0, 0);
+}
+function badge(u) {
+  const c = u.role_color || "#8A8F98";
+  return `<span class="badge" style="background:${c}22;color:${c};border:1px solid ${c}66"><i style="background:${c}"></i>${esc(u.role_label || "MEMBER")}</span>`;
+}
+function go(v) { view = v; render(); }
+document.querySelectorAll("[data-v]").forEach(b => b.onclick = () => go(b.dataset.v));
+
+// ---------- views ----------
+const VIEWS = {
+  home: async () => {
+    const o = await api("GET", "/api/overview");
+    const gc = await api("GET", "/api/gc-links");
+    const curs = o.by_currency.map(c => c.currency);
+    if (!curs.includes(ovState.cur) && curs.length) ovState.cur = curs[0];
+    const cur = ovState.cur;
+    const needsCur = ovState.metric !== "completions";
+    const pick = s => ovState.metric === "completions" ? s.completions
+                   : ovState.metric === "value" ? (s.value[cur] || 0) : (s.fees[cur] || 0);
+    const max = Math.max(1, ...o.series.map(pick));
+    const total30 = o.series.reduce((a, s) => a + s.completions, 0);
+    const valueLines = o.by_currency.length ? o.by_currency.map(c => `<div>${money(c.value, c.currency)}</div>`).join("") : "None yet";
+    const feeLines = !o.fee_percent ? "No fee set" : o.by_currency.length ? o.by_currency.map(c => `<div>${money(c.est_fee, c.currency)}</div>`).join("") : "None yet";
+    const fmt = v => ovState.metric === "completions" ? String(v) : money(v, cur);
+    const bars = o.series.map(s => {
+      const v = pick(s), h = v > 0 ? Math.max(4, Math.round(v / max * 100)) : 0;
+      return `<div class="col" title="${esc(s.day)}: ${esc(fmt(v))}"><div class="bar2" style="height:${h}%"></div></div>`;
+    }).join("");
+    return `
+    <div class="hero">
+      <div><div class="hero-k">Merry Christmas</div><h1>Holiday Overview</h1><p>Completed deals and estimated fees, verified records only.</p></div>
+      <div class="scene" aria-hidden="true"><svg class="s-main"><use href="#tree"/></svg><svg class="s-pip"><use href="#pip"/></svg><svg class="s-g1"><use href="#gift-red"/></svg><svg class="s-g2"><use href="#gift-gold"/></svg></div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="k"><svg class="ti"><use href="#tree"/></svg>Completed this month</div><div class="v">${o.month_completed}</div><div class="s">Verified completions (UTC month)</div></div>
+      <div class="tile"><div class="k"><svg class="ti"><use href="#gift-gold"/></svg>Deal value</div><div class="v" style="font-size:1rem">${valueLines}</div><div class="s">Kept per currency</div></div>
+      <div class="tile"><div class="k"><svg class="ti"><use href="#bell"/></svg>Estimated fees</div><div class="v" style="font-size:1rem">${feeLines}</div><div class="s">${o.fee_percent ? o.fee_percent + "% of completed value" : "Platform fee not set"}</div></div>
+      <div class="tile"><div class="k"><svg class="ti"><use href="#wreath"/></svg>Last 30 days</div><div class="v">${total30}</div><div class="s">Completions</div></div>
+    </div>
+    <h3>Activity</h3>
+    <div class="card">
+      <div class="ctl">
+        <select id="metricSel" aria-label="Metric">
+          <option value="completions" ${ovState.metric === "completions" ? "selected" : ""}>Completions</option>
+          <option value="value" ${ovState.metric === "value" ? "selected" : ""}>Deal value</option>
+          <option value="fees" ${ovState.metric === "fees" ? "selected" : ""}>Estimated fees</option>
+        </select>
+        ${needsCur && curs.length ? `<select id="curSel" aria-label="Currency">${curs.map(c => `<option ${c === cur ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>` : ""}
+      </div>
+      ${total30 || o.by_currency.length ? `<div class="chart">${bars}</div>
+        <div class="axis"><span>${esc(o.series[0].day.slice(5))}</span><span>${esc(o.series[29].day.slice(5))}</span></div>`
+        : `<div class="empty">No completed transactions yet.</div>`}
+    </div>
+    ${gcSection(gc)}
+    <h3>Look up a transaction</h3>
+    <div class="card"><form id="trackForm" class="stack"><label>Transaction ID<input name="tid" placeholder="STB-XXXXX-XXXXX" autocomplete="off" required></label>
+      <button class="btn block">Look up</button></form></div><div id="trackOut"></div>
+    <p class="muted" style="padding:0 6px">Figures are aggregated from completed transactions only. No names or links are shown.</p>`;
+  },
+
+  find: async () => `${await clientPickers()}<div class="card"><h2>New request</h2>
+    <p class="muted">Enter the transaction details. The next available MM/MW will be assigned.</p>
+    <div class="notice">Never share Facebook passwords or login codes here.</div>
+    <form id="reqForm" class="stack">
+      <label>Buyer display name<input name="buyer_name" maxlength="60" required></label>
+      <label>Buyer Facebook profile URL<input name="buyer_fb" type="url" placeholder="https://facebook.com/username" required></label>
+      <label>Seller display name<input name="seller_name" maxlength="60" required></label>
+      <label>Seller Facebook profile URL<input name="seller_fb" type="url" placeholder="https://facebook.com/username" required></label>
+      <label>Item or service<input name="item" maxlength="120" required></label>
+      <div class="two"><label>Agreed price<input name="price" inputmode="decimal" placeholder="0.00" required></label>
+        <label>Currency<select name="currency"><option>PHP</option><option>USD</option><option>EUR</option></select></label></div>
+      <label>Transaction description<textarea name="description" maxlength="1000" required></textarea></label>
+      <label>Additional instructions (optional)<textarea name="extra" maxlength="1000"></textarea></label>
+      <label class="check"><input type="checkbox" name="agree" required><span>Both parties agree to these details and the MM/MW process. The platform records progress and does not guarantee refunds or outcomes.</span></label>
+      <button class="btn block">Submit request</button>
+    </form></div><div id="reqOut"></div>`,
+
+  mms: async () => {
+    const list = await api("GET", "/api/mms");
+    return `<h3>MM/MW directory</h3>` + (list.length ? list.map(m => `<div class="card">
+      <div class="row"><strong>${esc(m.name)}</strong><span class="pill">${m.holding} holding · ${m.completed} completed</span></div>
+      ${m.specialties ? `<p class="muted">${esc(m.specialties)}</p>` : ""}${m.bio ? `<p>${esc(m.bio)}</p>` : ""}</div>`).join("")
+      : `<div class="card empty">No MM/MW has published a profile yet.</div>`);
+  },
+
+  board: async () => {
+    const [list, req] = await Promise.all([api("GET", "/api/leaderboard"), api("GET", "/api/top-requesters")]);
+    const mmBlock = `<h3>MM/MW leaderboard · completed</h3><div class="card">` +
+      (list.length ? list.map((m,i) => `<div class="line"><span>${i+1}. ${esc(m.name)}</span><strong>${m.completed}</strong></div>`).join("")
+      : `<div class="empty">No completions yet.</div>`) + `</div>`;
+    const reqBlock = `<h3>Most requests</h3><div class="card">` +
+      (req.length ? req.map((r,i) => `<div class="line"><span>${i+1}. ${esc(r.name)}</span><strong>${r.count} ${r.count === 1 ? "request" : "requests"}</strong></div>`).join("")
+      : `<div class="empty">No requests yet.</div>`) + `</div>`;
+    return mmBlock + reqBlock + `<p class="muted" style="padding:0 6px">Rankings use records saved on the platform. The Most requests list shows display names only.</p>`;
+  },
+
+  account: async () => {
+    if (!me) {
+      if (setupRequired) return `<div class="card"><h2>First-time setup</h2>
+        <p class="muted">Enter the one-time code shown in the server console.</p>
+        <form id="setupForm" class="stack">
+          <label>Setup code<input name="code" required autocomplete="off"></label>
+          <label>Username<input name="username" required autocomplete="off"></label>
+          <label>Your name<input name="name" maxlength="60" required></label>
+          <label>Password (12+ characters)<input name="password" type="password" minlength="12" required autocomplete="new-password"></label>
+          <button class="btn block">Create owner account</button></form></div>`;
+      return `<div class="card"><svg class="hero-ico small" aria-hidden="true"><use href="#solara"/></svg><h2>Staff log in</h2>
+        <form id="loginForm" class="stack">
+          <label>Username<input name="username" required autocomplete="username"></label>
+          <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+          <button class="btn block">Log in</button></form></div>
+        <p class="muted">Staff accounts are created by an administrator.</p>`;
+    }
+    const parts = [profileSection()];
+    parts.push(await alertsSection());
+    if (me.mm_eligible) parts.push(await holdsSection());
+    parts.push(await clientsSection());
+    const r = RANK[me.role] || 0;
+    if (r >= 3) parts.push(await queueSection());
+    if (r >= 4) parts.push(await revenueSection(), await staffSection(), await auditSection());
+    parts.push(`<div style="margin-top:20px"><button class="btn ghost block" data-click="logout">Log out</button></div>`);
+    return parts.join("");
+  }
+};
+
+const profileSection = () => `<h3>Profile</h3><div class="card">${badge(me)}<form id="profileForm" class="stack" style="margin-top:12px">
+  <label>Name<input name="name" maxlength="60" value="${esc(me.name)}" required></label>
+  <label>Bio<textarea name="bio" maxlength="500">${esc(me.bio)}</textarea></label>
+  <label>Specialties<input name="specialties" maxlength="200" value="${esc(me.specialties)}"></label>
+  <label class="check"><input type="checkbox" name="show_public" ${me.show_public ? "checked" : ""}><span>Show my profile in the public MM/MW directory</span></label>
+  <button class="btn">Save profile</button></form></div>`;
+
+async function alertsSection() {
+  const n = await api("GET", "/api/notifications");
+  return `<h3>Alerts${n.unread ? ` (${n.unread} new)` : ""}</h3><div class="card">` +
+    (n.items.length ? n.items.map(i => `<div class="notif ${i.read ? "read" : ""}"><span class="dot"></span><div><div>${esc(i.text)}</div><div class="muted">${new Date(i.at).toLocaleString()}</div></div></div>`).join("")
+    : `<div class="empty"><svg class="empty-ico" aria-hidden="true"><use href="#snowy"/></svg><div>No notifications yet.</div></div>`) +
+    (n.unread ? `<div class="wrap"><button class="btn ghost sm" data-click="readAll">Mark all read</button></div>` : "") + `</div>`;
+}
+
+function transitionButtons(t, admin) {
+  return (T[t.status] || []).filter(n => admin ? !BLOCKED.includes(n) : MM_OK.includes(n))
+    .map(n => `<button class="btn sm ghost" data-click="move" data-id="${esc(t.id)}" data-to="${esc(n)}">${esc(n)}</button>`).join("");
+}
+
+async function holdsSection() {
+  const list = (await api("GET", "/api/transactions")).filter(t => ![ST.DONE, ST.CANCEL].includes(t.status));
+  return `<h3>My holds</h3>` + (list.length ? list.map(t => `<div class="card">
+    <div class="row"><span class="tx">${esc(t.id)}</span>${pill(t.status)}</div>
+    <p class="muted">${esc(t.item)} · ${money(t.price, t.currency)}</p>
+    <div class="wrap">${t.status === ST.AWAIT
+      ? `<button class="btn sm" data-click="respond" data-id="${esc(t.id)}" data-accept="1">Accept</button><button class="btn sm ghost" data-click="respond" data-id="${esc(t.id)}" data-accept="0">Decline</button>`
+      : transitionButtons(t, false)}</div></div>`).join("") : `<div class="card empty"><svg class="empty-ico" aria-hidden="true"><use href="#pip"/></svg><div>No active holds right now.</div></div>`);
+}
+
+async function revenueSection() {
+  const r = await api("GET", "/api/revenue");
+  return `<h3>Revenue</h3><div class="card">` +
+    (r.by_currency.length ? r.by_currency.map(c => `<div class="line"><span>${esc(c.currency)} · ${c.count} completed</span><strong>${money(c.value, c.currency)}</strong></div>` +
+      (r.fee_percent ? `<div class="line"><span>${esc(c.currency)} est. fee (${r.fee_percent}%)</span><strong>${money(c.est_fee, c.currency)}</strong></div>` : "")).join("")
+    : `<div class="empty">No completed transactions yet.</div>`) +
+    `<p class="muted">Amounts are kept per currency. ${r.fee_percent ? "" : "No platform fee is set."}</p>` +
+    (me.role === "owner" ? `<form id="feeForm" class="row-form"><input name="fee_percent" inputmode="decimal" value="${r.fee_percent}" aria-label="Platform fee percent"><button class="btn sm">Save fee %</button></form>` : "") +
+    `</div>`;
+}
+
+async function queueSection() {
+  const [list, staff] = await Promise.all([api("GET", "/api/transactions"), api("GET", "/api/staff")]);
+  const mms = staff.filter(s => s.mm_eligible && s.active);
+  const nameOf = id => (staff.find(s => s.id === id) || {}).name || "none";
+  return `<h3>Queue</h3>` + (list.length ? list.map(t => `<div class="card">
+    <div class="row"><span class="tx">${esc(t.id)}</span>${pill(t.status)}</div>
+    <p class="muted">${esc(t.item)} · ${money(t.price, t.currency)} · MM/MW: ${esc(nameOf(t.mm_id))}${t.open_dispute ? " · open dispute" : ""}</p>
+    ${[ST.PENDING, ST.AWAIT].includes(t.status) ? (mms.length
+      ? `<div class="row-form"><select id="mm-${esc(t.id)}">${mms.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join("")}</select>
+         <button class="btn sm" data-click="assign" data-id="${esc(t.id)}">Assign</button></div>`
+      : `<p class="muted">No active MM/MW is eligible yet.</p>`) : ""}
+    <div class="wrap">${transitionButtons(t, true)}</div></div>`).join("") : `<div class="card empty">No transactions yet.</div>`);
+}
+
+async function staffSection() {
+  const staff = await api("GET", "/api/staff");
+  const roles = await api("GET", "/api/roles");
+  const hier = await api("GET", "/api/role-hierarchy");
+  const hierarchy = `<h3>Role hierarchy</h3><div class="card"><ol class="hier">${hier.map((h,i) => `<li><span>${i+1}. ${esc(h.label)}</span><span class="badge" style="background:${h.color}22;color:${h.color};border:1px solid ${h.color}66"><i style="background:${h.color}"></i>${esc(h.label)}</span></li>`).join("")}</ol></div>`;
+  return `${hierarchy}<h3>Staff</h3><div class="card">` + staff.map(s => `<div class="item">
+    <div><strong>${esc(s.name)}</strong> <span class="muted">@${esc(s.username)}</span> ${badge(s)}
+    <div class="muted">${s.active ? "Active" : "Deactivated"}${s.mm_eligible ? " · MM/MW eligible" : ""}</div></div>
+    ${s.role === "owner" ? "" : `<div class="row-form" style="width:100%"><select id="role-${s.id}" aria-label="Role">${roles.map(r => `<option value="${esc(r.value)}" ${r.value === s.role ? "selected" : ""}>${esc(r.label)}</option>`).join("")}</select><button class="btn sm ghost" data-click="setRole" data-id="${s.id}">Set role</button></div>`}
+    <div class="wrap">
+      <button class="btn sm ghost" data-click="toggle" data-id="${s.id}" data-field="mm_eligible" data-cur="${s.mm_eligible ? 1 : 0}">${s.mm_eligible ? "Revoke MM" : "Make MM"}</button>
+      <button class="btn sm ghost" data-click="toggle" data-id="${s.id}" data-field="active" data-cur="${s.active ? 1 : 0}">${s.active ? "Deactivate" : "Activate"}</button>
+    </div></div>`).join("") + `</div>
+    <h3>Add staff</h3><div class="card"><form id="staffForm" class="stack">
+      <label>Username<input name="username" required autocomplete="off"></label>
+      <label>Name<input name="name" maxlength="60" required></label>
+      <label>Temporary password (12+ characters)<input name="password" type="password" minlength="12" required autocomplete="new-password"></label>
+      <label>Role<select name="role">${roles.map(r => `<option value="${esc(r.value)}">${esc(r.label)}</option>`).join("")}</select></label>
+      <label class="check"><input type="checkbox" name="mm_eligible"><span>MM/MW eligible</span></label>
+      <button class="btn block">Create account</button></form></div>`;
+}
+
+async function auditSection() {
+  const rows = await api("GET", "/api/audit");
+  return `<h3>Audit log</h3><div class="card">` + (rows.length ? rows.slice(0, 50).map(a => `<div class="line"><span>${esc(a.actor || "system")} · ${esc(a.action)}${a.target ? " · " + esc(a.target) : ""}</span><span class="muted">${new Date(a.at).toLocaleString()}</span></div>`).join("") : `<div class="empty">No activity yet.</div>`) + `</div>`;
+}
+
+
+function gcSection(gc) {
+  return `<h3>Join this GC</h3><div class="card"><div class="stack">${gc.map(g => g.url
+    ? `<a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">Join GC ${g.slot}</a>`
+    : `<button class="btn ghost" disabled>GC ${g.slot}: link not set yet</button>`).join("")}</div>
+    <p class="muted" style="margin-top:10px">Opens the group chat in Messenger. Ask your MM/MW if you are not sure which GC is yours.</p></div>`;
+}
+
+async function clientPickers() {
+  if (!me) return "";
+  const list = await api("GET", "/api/clients");
+  window.CLIENTS = Object.fromEntries(list.map(c => [c.id, c]));
+  const opts = list.map(c => `<option value="${c.id}">${esc(c.name)}${c.display_name ? " (" + esc(c.display_name) + ")" : ""}</option>`).join("");
+  return `<div class="card"><h2>Saved clients</h2><p class="muted">Pick a saved client to fill in the name and Facebook link.</p>
+    <div class="two"><label>Buyer<select data-pick="buyer"><option value="">Choose...</option>${opts}</select></label>
+    <label>Seller<select data-pick="seller"><option value="">Choose...</option>${opts}</select></label></div></div>`;
+}
+
+async function clientsSection() {
+  const list = await api("GET", "/api/clients");
+  return `<h3>Clients</h3><div class="card">` + (list.length ? list.map(c => `<div class="item">
+      <div><strong>${esc(c.name)}</strong>${c.display_name ? ` <span class="muted">(${esc(c.display_name)})</span>` : ""}<div class="muted"><a href="${esc(c.fb_url)}" target="_blank" rel="noopener noreferrer">Facebook page</a></div></div>
+      <div class="wrap"><button class="btn sm ghost" data-click="delClient" data-id="${c.id}">Delete</button></div></div>`).join("")
+    : `<div class="empty">No saved clients yet.</div>`) + `</div>
+    <h3>Add client</h3><div class="card"><form id="clientForm" class="stack">
+      <label>Client name<input name="cname" maxlength="60" required></label>
+      <label>Display name (how they are called)<input name="display" maxlength="60"></label>
+      <label>Facebook page or profile link<input name="fb" type="url" placeholder="https://facebook.com/pagename" required></label>
+      <button class="btn block">Save client</button></form></div>`;
+}
+
+
+// ---------- sign-in gate: shown before the app ----------
+function needsGate() {
+  return setupRequired || !me || (me.role === "visitor" && !me.onboarded);
+}
+async function gateView() {
+  if (setupRequired) return `<div class="card"><h2>First-time setup</h2>
+    <p class="muted">Enter the one-time code shown in the server console.</p>
+    <form id="setupForm" class="stack">
+      <label>Setup code<input name="code" required autocomplete="off"></label>
+      <label>Username<input name="username" required autocomplete="off"></label>
+      <label>Your name<input name="name" maxlength="60" required></label>
+      <label>Password (12+ characters)<input name="password" type="password" minlength="12" required autocomplete="new-password"></label>
+      <button class="btn block">Create owner account</button></form></div>`;
+  if (me && me.role === "visitor") return `<div class="card"><h2>A few quick questions</h2>
+    <p class="muted">This helps us serve you better. It takes a few seconds.</p>
+    <form id="onboardForm" class="stack">
+      <label>Why are you here?</label>
+      <label class="check"><input type="radio" name="purpose" value="buying" required><span>I am buying something</span></label>
+      <label class="check"><input type="radio" name="purpose" value="selling"><span>I am selling something</span></label>
+      <label class="check"><input type="radio" name="purpose" value="middleman"><span>I need a middleman (MM/MW)</span></label>
+      <label class="check"><input type="radio" name="purpose" value="looking"><span>Just looking around</span></label>
+      <label class="check"><input type="radio" name="purpose" value="other"><span>Something else</span></label>
+      <label>Who sent you this link? (optional)<input name="referrer" maxlength="120" placeholder="A friend, a page, a post..."></label>
+      <label class="check"><input type="checkbox" name="join_stream"><span>Yes, I want to join the stream and group chat</span></label>
+      <button class="btn block">Continue</button></form></div>`;
+  return `<div class="card"><h2>Welcome to Solar BNST</h2>
+    <p class="muted">Sign in or create a free account to continue.</p>
+    <div id="gBtn" class="wrap" style="justify-content:center"></div>
+    <h3>Create an account</h3>
+    <form id="signupForm" class="stack">
+      <label>Your name<input name="name" maxlength="60" required autocomplete="name"></label>
+      <label>Username<input name="username" maxlength="24" required autocomplete="username"></label>
+      <label>Password (8+ characters)<input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+      <button class="btn block">Create account</button></form>
+    <details class="login-toggle">
+      <summary class="btn ghost block">Already have an account? Log in</summary>
+      <form id="loginForm" class="stack" style="margin-top:14px">
+        <label>Username<input name="username" required autocomplete="username"></label>
+        <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+        <button class="btn block">Log in</button>
+      </form>
+    </details></div>`;
+}
+async function initGoogle() {
+  const box = document.getElementById("gBtn"); if (!box) return;
+  let cfg = {};
+  try { cfg = await api("GET", "/api/config"); } catch {}
+  if (!cfg.google_client_id) {
+    box.innerHTML = `<p class="muted" style="text-align:center">Google sign-in is not set up yet. Use an account below.</p>`;
+    return;
+  }
+  const s = document.createElement("script");
+  s.src = "https://accounts.google.com/gsi/client"; s.async = true;
+  s.onload = () => {
+    window.google.accounts.id.initialize({client_id: cfg.google_client_id, callback: async resp => {
+      try { const r = await api("POST", "/api/auth/google", {credential: resp.credential}); me = r.user; render(); }
+      catch (e) { toast(e.message, false); }
+    }});
+    window.google.accounts.id.renderButton(box, {theme: "outline", size: "large", width: 280, text: "continue_with"});
+  };
+  document.head.appendChild(s);
+}
+
+// ---------- form submissions ----------
+const FORMS = {
+  async trackForm(f) {
+    const out = $("#trackOut"); out.innerHTML = `<p class="muted">Loading...</p>`;
+    const t = await api("GET", `/api/track/${encodeURIComponent(f.tid.value.trim().toUpperCase())}`);
+    out.innerHTML = `<div class="card"><div class="row"><span class="tx">${esc(t.id)}</span>${pill(t.status)}</div>
+      <ol class="tl">${t.timeline.map(h => `<li>${esc(h.status)}<small>${new Date(h.at).toLocaleString()}</small></li>`).join("")}</ol></div>`;
+  },
+  async reqForm(f) {
+    const d = Object.fromEntries(new FormData(f)); d.agree = f.agree.checked;
+    const r = await api("POST", "/api/transactions", d);
+    f.reset();
+    $("#reqOut").innerHTML = `<div class="card empty"><h2>Request received</h2><p>Your transaction ID</p>
+      <p class="tx big">${esc(r.id)}</p><p class="muted">Save this ID to track progress.</p></div>`;
+  },
+  async signupForm(f) {
+    const r = await api("POST", "/api/visitors", {name:f.name.value, username:f.username.value, password:f.password.value});
+    me = r.user; toast("Account created", true); render();
+  },
+  async onboardForm(f) {
+    const purpose = (f.querySelector("input[name=purpose]:checked") || {}).value;
+    const r = await api("PATCH", "/api/onboarding", {purpose, referrer:f.referrer.value, join_stream:f.join_stream.checked});
+    me = r; toast("Welcome!", true); render();
+  },
+  async loginForm(f) {
+    const r = await api("POST", "/api/login", {username:f.username.value, password:f.password.value});
+    me = r.user; toast("Logged in", true); render();
+  },
+  async setupForm(f) {
+    await api("POST", "/api/setup", {code:f.code.value, username:f.username.value, name:f.name.value, password:f.password.value});
+    setupRequired = false; toast("Owner created. Log in now.", true); render();
+  },
+  async profileForm(f) {
+    me = await api("PATCH", "/api/me", {name:f.name.value, bio:f.bio.value, specialties:f.specialties.value, show_public:f.show_public.checked});
+    toast("Profile saved", true); render();
+  },
+  async feeForm(f) {
+    await api("PATCH", "/api/settings", {fee_percent: Number(f.fee_percent.value)});
+    toast("Fee saved", true); render();
+  },
+  async clientForm(f) {
+    await api("POST", "/api/clients", {name:f.cname.value, display_name:f.display.value, fb_url:f.fb.value});
+    f.reset(); toast("Client saved", true); render();
+  },
+  async staffForm(f) {
+    await api("POST", "/api/staff", {username:f.username.value, name:f.name.value, password:f.password.value, role:f.role.value, mm_eligible:f.mm_eligible.checked});
+    toast("Account created", true); render();
+  }
+};
+document.addEventListener("submit", async e => {
+  e.preventDefault();
+  const fn = FORMS[e.target.id]; if (!fn) return;
+  try { await fn(e.target); }
+  catch (err) { toast(err.message, false); }
+});
+
+// ---------- button actions ----------
+const CLICK = {
+  async logout() { await api("POST", "/api/logout"); me = null; return "Logged out"; },
+  async readAll() { await api("POST", "/api/notifications/read-all"); },
+  async respond(el) { await api("POST", `/api/transactions/${el.dataset.id}/respond`, {accept: el.dataset.accept === "1"}); return "Updated"; },
+  async move(el) {
+    const to = el.dataset.to; let reason = "";
+    if (to === ST.DISP || to === ST.CANCEL) {
+      reason = prompt(`Reason for "${to}" (required):`) || "";
+      if (reason.trim().length < 3) return "A reason is required.";
+    }
+    await api("POST", `/api/transactions/${el.dataset.id}/transition`, {to, reason});
+    return "Status updated";
+  },
+  async assign(el) {
+    const sel = document.getElementById("mm-" + el.dataset.id);
+    await api("POST", `/api/transactions/${el.dataset.id}/assign`, {mm_id: Number(sel.value)});
+    return "Assigned";
+  },
+  async setRole(el) {
+    const role = document.getElementById("role-" + el.dataset.id).value;
+    await api("PATCH", `/api/staff/${el.dataset.id}`, {role});
+    return "Role updated";
+  },
+  async delClient(el) {
+    await api("DELETE", `/api/clients/${el.dataset.id}`);
+    return "Client deleted";
+  },
+  async toggle(el) {
+    const cur = el.dataset.cur === "1";
+    await api("PATCH", `/api/staff/${el.dataset.id}`, {[el.dataset.field]: !cur});
+    return "Updated";
+  }
+};
+document.addEventListener("click", async e => {
+  const el = e.target.closest("[data-click]"); if (!el) return;
+  try { const msg = await CLICK[el.dataset.click](el); if (msg) toast(msg, true); }
+  catch (err) { toast(err.message, false); }
+  render();
+});
+
+document.addEventListener("change", e => {
+  if (e.target.id === "metricSel") { ovState.metric = e.target.value; render(); }
+  if (e.target.id === "curSel") { ovState.cur = e.target.value; render(); }
+});
+
+document.addEventListener("change", e => {
+  if (!e.target.dataset || !e.target.dataset.pick) return;
+  const c = (window.CLIENTS || {})[e.target.value]; const f = document.getElementById("reqForm");
+  if (!c || !f) return;
+  const side = e.target.dataset.pick;
+  f[side + "_name"].value = c.display_name || c.name;
+  f[side + "_fb"].value = c.fb_url;
+});
+
+// ---------- start ----------
+(async () => {
+  try { setupRequired = (await api("GET", "/api/status")).setup_required; } catch {}
+  try { me = await api("GET", "/api/me"); } catch { me = null; }
+  go("home");
+})();
+</script>
+</body>
+</html>
